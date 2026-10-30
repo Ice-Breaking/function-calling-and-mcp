@@ -23,7 +23,7 @@ function-calling-and-mcp/
 └── exercise2-agent-mcp/            Agent + MCP 应用
     ├── travel_planner_app.py      行程图生成界面（问什么行程就出什么 A4 图）
     ├── generate_travel_planner.py 命令行版行程图生成脚本
-    ├── travel_planner.html        生成的 A4 行程表样例（北京三日游）
+    ├── travel_planner.html        生成的 A4 行程表样例（川西小环线 5 天自驾游）
     ├── travel_planner.png         行程表整页截图样例
     └── cursor-mcp.json            Cursor 客户端的 MCP 服务配置
 ```
