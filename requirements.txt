@@ -1,0 +1,18 @@
+# Agent 框架与模型 SDK（0.0.34 为实测可用版本，GUI 依赖 gradio + modelscope_studio）
+qwen-agent[gui]==0.0.34
+# qwen_agent 运行时会 import soundfile，但该依赖未被包声明，必须显式安装
+soundfile
+dashscope
+
+# MCP
+mcp
+
+# 数据查询与展示
+SQLAlchemy
+pandas
+matplotlib
+tabulate
+
+# MySQL 驱动：门票助手 v1/v2 用 mysqlconnector，v3 用 pymysql
+mysql-connector-python
+PyMySQL

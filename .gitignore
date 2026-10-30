@@ -1,0 +1,19 @@
+# Python 运行产物
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 本地凭证
+.env
+
+# Qwen-Agent 运行时产物
+workspace/
+image_show/
+
+# 本地数据库文件
+*.db
+*.sqlite3
+
+# 系统文件
+.DS_Store

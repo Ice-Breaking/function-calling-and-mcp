@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "amap-maps": {
+      "command": "/Users/natural/.nvm/versions/node/v22.23.1/bin/npx",
+      "args": [
+        "-y",
+        "@amap/amap-maps-mcp-server"
+      ],
+      "env": {
+        "AMAP_MAPS_API_KEY": "在这里填你的高德Web服务Key"
+      }
+    },
+    "tavily-mcp": {
+      "command": "/Users/natural/.nvm/versions/node/v22.23.1/bin/npx",
+      "args": [
+        "-y",
+        "tavily-mcp@0.1.4"
+      ],
+      "env": {
+        "TAVILY_API_KEY": "在这里填你的Tavily Key"
+      }
+    },
+    "txt-counter": {
+      "command": "/Users/natural/.pyenv/shims/python3",
+      "args": [
+        "/Users/natural/Downloads/AI学习/应用开发/Function Calling与MCP/function-calling-and-mcp/case-mcp/txt_counter.py"
+      ]
+    }
+  }
+}

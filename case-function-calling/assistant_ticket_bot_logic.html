@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>assistant_ticket_bot-1.py 代码逻辑整理</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            line-height: 1.7;
+            margin: 0;
+            padding: 24px;
+            background: #f0f2f5;
+            color: #1a1a2e;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 36px 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+        }
+        h1 { color: #1a1a2e; border-bottom: 3px solid #3498db; padding-bottom: 12px; }
+        h2 { color: #2c3e50; margin-top: 36px; }
+        h3 { color: #34495e; margin-top: 20px; }
+        .section {
+            margin: 24px 0;
+            padding: 20px 24px;
+            border-left: 4px solid #3498db;
+            background: #f8f9fb;
+            border-radius: 0 6px 6px 0;
+        }
+        .mermaid {
+            background: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+        th, td { border: 1px solid #dde; padding: 8px 12px; text-align: left; }
+        th { background: #eef2f7; }
+        tr:nth-child(even) { background: #fafbfc; }
+        code, .tag {
+            background: #e8edf3;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+            font-size: 13px;
+        }
+        .file-tag {
+            display: inline-block;
+            background: #3498db;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        ul { padding-left: 22px; }
+        li { margin: 4px 0; }
+        .note {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <span class="file-tag">assistant_ticket_bot-1.py</span>
+    <h1>门票助手代码逻辑整理</h1>
+    <p>基于 Qwen Agent 框架的 Function Calling 示例：用户提问 → LLM 生成 SQL → 调用 <code>exc_sql</code> 工具查库 → 返回分析结果。</p>
+
+    <!-- 1. 代码模块结构 -->
+    <div class="section">
+        <h2>1. 代码模块结构</h2>
+        <div class="mermaid">
+graph TB
+    subgraph 全局配置
+        A1[ROOT_RESOURCE 资源目录]
+        A2[dashscope.api_key 环境变量]
+        A3[dashscope.timeout = 30]
+    end
+
+    subgraph 核心定义
+        B1[system_prompt<br/>角色 + 表结构 + SKU规则]
+        B2[ExcSQLTool<br/>@register_tool exc_sql]
+    end
+
+    subgraph 服务初始化
+        C1[init_agent_service<br/>创建 Assistant 实例]
+    end
+
+    subgraph 运行入口
+        D1[app_tui 终端交互]
+        D2[app_gui Web界面]
+        D3["__main__ → app_gui"]
+    end
+
+    A2 --> C1
+    B1 --> C1
+    B2 --> C1
+    C1 --> D1
+    C1 --> D2
+    D3 --> D2
+        </div>
+        <table>
+            <tr><th>模块</th><th>行号</th><th>职责</th></tr>
+            <tr><td>全局配置</td><td>11-16</td><td>资源路径、DashScope API Key 与超时</td></tr>
+            <tr><td>system_prompt</td><td>18-47</td><td>注入助手角色、MySQL 表结构、SKU 分类与查询提示</td></tr>
+            <tr><td>ExcSQLTool</td><td>49-78</td><td>注册 Function Calling 工具，执行 SQL 并返回 Markdown 表格</td></tr>
+            <tr><td>init_agent_service</td><td>80-100</td><td>组装 LLM 配置 + Assistant + 工具列表</td></tr>
+            <tr><td>app_tui</td><td>102-144</td><td>命令行循环对话</td></tr>
+            <tr><td>app_gui</td><td>147-168</td><td>启动 WebUI 图形界面</td></tr>
+            <tr><td>入口</td><td>172-174</td><td>默认以 GUI 模式运行</td></tr>
+        </table>
+    </div>
+
+    <!-- 2. Function Calling 核心流程 -->
+    <div class="section">
+        <h2>2. Function Calling 核心流程</h2>
+        <p>这是整个程序的核心链路：LLM 根据 system_prompt 理解业务，按需生成 SQL 并调用 <code>exc_sql</code>。</p>
+        <div class="mermaid">
+sequenceDiagram
+    actor U as 用户
+    participant UI as TUI / WebUI
+    participant Bot as Assistant 门票助手
+    participant LLM as qwen-flash
+    participant Tool as ExcSQLTool exc_sql
+    participant DB as MySQL ubr
+
+    U->>UI: 输入自然语言问题
+    UI->>Bot: messages 追加 user 消息
+    Bot->>LLM: system_prompt + 对话历史 + tools 定义
+    LLM-->>Bot: 返回 tool_call sql_input
+
+    Bot->>Tool: call params JSON
+    Note over Tool: 解析 sql_input<br/>database 默认 ubr
+    Tool->>DB: pd.read_sql 执行查询
+    DB-->>Tool: 查询结果 DataFrame
+    Note over Tool: head 10 行<br/>to_markdown 格式化
+    Tool-->>Bot: 返回 Markdown 表格或错误信息
+
+    Bot->>LLM: 将 tool 结果回传
+    LLM-->>Bot: 生成自然语言回答
+    Bot-->>UI: 流式输出 response
+    UI-->>U: 展示分析结果
+        </div>
+    </div>
+
+    <!-- 3. exc_sql 工具内部逻辑 -->
+    <div class="section">
+        <h2>3. exc_sql 工具内部逻辑</h2>
+        <div class="mermaid">
+flowchart TD
+    Start([call 被调用]) --> Parse[json.loads 解析 params]
+    Parse --> GetSQL[取 sql_input]
+    Parse --> GetDB[取 database 默认 ubr]
+    GetSQL --> Connect[create_engine 建立 MySQL 连接]
+    GetDB --> Connect
+    Connect --> Exec[pd.read_sql 执行 SQL]
+    Exec -->|成功| Limit[df.head 10 取前10行]
+    Limit --> Format[to_markdown 转 Markdown]
+    Format --> ReturnOK([返回查询结果])
+    Exec -->|异常| ReturnErr([返回 SQL执行出错 信息])
+        </div>
+        <table>
+            <tr><th>属性</th><th>值</th></tr>
+            <tr><td>工具名</td><td><code>exc_sql</code></td></tr>
+            <tr><td>参数</td><td><code>sql_input</code>（必填，string）</td></tr>
+            <tr><td>可选参数</td><td><code>database</code>（默认 <code>ubr</code>）</td></tr>
+            <tr><td>连接池</td><td>pool_size=10, max_overflow=20, connect_timeout=10</td></tr>
+            <tr><td>结果限制</td><td>最多返回前 10 行，防止数据量过大</td></tr>
+        </table>
+    </div>
+
+    <!-- 4. init_agent_service -->
+    <div class="section">
+        <h2>4. 助手初始化 init_agent_service</h2>
+        <div class="mermaid">
+flowchart LR
+    A[llm_cfg] --> B[Assistant 实例]
+    C[system_prompt] --> B
+    D["function_list: exc_sql"] --> B
+
+    subgraph llm_cfg 配置
+        A1[model: qwen-flash]
+        A2[timeout: 30]
+        A3[retry_count: 3]
+    end
+
+    A1 --> A
+    A2 --> A
+    A3 --> A
+
+    B --> E{初始化成功?}
+    E -->|是| F[返回 bot]
+    E -->|否| G[打印错误并 raise]
+        </div>
+        <table>
+            <tr><th>Assistant 参数</th><th>值</th></tr>
+            <tr><td>name</td><td>门票助手</td></tr>
+            <tr><td>description</td><td>门票查询与订单分析</td></tr>
+            <tr><td>system_message</td><td>system_prompt（含表结构与 SKU 规则）</td></tr>
+            <tr><td>function_list</td><td><code>['exc_sql']</code>（仅传工具名字符串）</td></tr>
+        </table>
+    </div>
+
+    <!-- 5. system_prompt 业务知识 -->
+    <div class="section">
+        <h2>5. system_prompt 注入的业务知识</h2>
+        <div class="mermaid">
+mindmap
+  root((system_prompt))
+    角色定位
+      门票助手
+      MySQL 8.0 环境
+    数据表 tkt_orders
+      订单时间 account_id
+      使用人信息 gov_id gender age province
+      商品信息 SKU product_serial_no
+      订单信息 eco_main_order_id sales_channel status
+      金额数量 order_value quantity
+    SKU 分类规则
+      一日门票
+        Universal Studios Beijing One-Day 前缀
+        Standard Child Senior
+      二日门票
+        USB 前缀
+        1.5-Day Standard Discounted
+    查询模板
+      CASE WHEN SKU LIKE 统计销量
+        </div>
+        <h3>数据库表字段</h3>
+        <table>
+            <tr><th>字段</th><th>类型</th><th>含义</th></tr>
+            <tr><td>order_time</td><td>DATETIME</td><td>订单日期</td></tr>
+            <tr><td>account_id</td><td>INT</td><td>预定用户 ID</td></tr>
+            <tr><td>gov_id</td><td>VARCHAR(18)</td><td>使用人身份证号</td></tr>
+            <tr><td>gender</td><td>VARCHAR(10)</td><td>使用人性别</td></tr>
+            <tr><td>age</td><td>INT</td><td>年龄</td></tr>
+            <tr><td>province</td><td>VARCHAR(30)</td><td>使用人省份</td></tr>
+            <tr><td>SKU</td><td>VARCHAR(100)</td><td>商品 SKU 名</td></tr>
+            <tr><td>product_serial_no</td><td>VARCHAR(30)</td><td>商品 ID</td></tr>
+            <tr><td>eco_main_order_id</td><td>VARCHAR(20)</td><td>订单 ID</td></tr>
+            <tr><td>sales_channel</td><td>VARCHAR(20)</td><td>销售渠道</td></tr>
+            <tr><td>status</td><td>VARCHAR(30)</td><td>商品状态</td></tr>
+            <tr><td>order_value</td><td>DECIMAL(10,2)</td><td>订单金额</td></tr>
+            <tr><td>quantity</td><td>INT</td><td>商品数量</td></tr>
+        </table>
+    </div>
+
+    <!-- 6. TUI 模式 -->
+    <div class="section">
+        <h2>6. 终端交互模式 app_tui</h2>
+        <div class="mermaid">
+flowchart TD
+    Start([启动 app_tui]) --> Init[init_agent_service]
+    Init --> InitMsg[messages = 空列表]
+    InitMsg --> Loop{while True}
+
+    Loop --> InputQ[input 用户问题]
+    InputQ --> InputF[input 文件 URL 可选]
+    InputF --> CheckQ{问题为空?}
+    CheckQ -->|是| Warn[提示不能为空] --> Loop
+    CheckQ -->|否| BuildMsg[构建 user 消息]
+
+    BuildMsg --> HasFile{有文件?}
+    HasFile -->|否| TextOnly["content: query 纯文本"]
+    HasFile -->|是| TextFile["content: text + file 数组"]
+    TextOnly --> Append[追加到 messages]
+    TextFile --> Append
+
+    Append --> Run["bot.run messages 流式迭代"]
+    Run --> Print[打印每次 response]
+    Print --> Extend[messages.extend response]
+    Extend --> Loop
+
+    Init -->|失败| ErrStart[打印启动失败]
+    Loop -->|单次异常| ErrLoop[打印错误 继续循环]
+        </div>
+    </div>
+
+    <!-- 7. GUI 模式 -->
+    <div class="section">
+        <h2>7. 图形界面模式 app_gui（默认入口）</h2>
+        <div class="mermaid">
+flowchart TD
+    Start(["__main__ 调用 app_gui"]) --> Init[init_agent_service]
+    Init --> Config[配置 chatbot_config]
+    Config --> S1[示例问题1: 2023年4-6月按周统计门票销量]
+    Config --> S2[示例问题2: 2023年7月各省份入园人数]
+    Config --> S3[示例问题3: 2023年10月1-7日销售渠道金额排名]
+    S1 --> WebUI[WebUI bot chatbot_config.run]
+    S2 --> WebUI
+    S3 --> WebUI
+    WebUI --> Serve[启动 Web 服务 等待用户交互]
+    Init -->|失败| Err[打印错误 检查网络和 API Key]
+        </div>
+        <div class="note">
+            当前入口 <code>if __name__ == '__main__'</code> 默认调用 <code>app_gui()</code>，如需终端模式需改为 <code>app_tui()</code>。
+        </div>
+    </div>
+
+    <!-- 8. 整体数据流 -->
+    <div class="section">
+        <h2>8. 整体数据流总览</h2>
+        <div class="mermaid">
+graph LR
+    subgraph 输入层
+        U[用户自然语言]
+        F[可选文件 URL]
+    end
+
+    subgraph Agent 层
+        SP[system_prompt 业务知识]
+        LLM[qwen-flash LLM]
+        FC[Function Calling]
+    end
+
+    subgraph 工具层
+        SQL[exc_sql 工具]
+    end
+
+    subgraph 数据层
+        DB[(MySQL tkt_orders)]
+    end
+
+    subgraph 输出层
+        MD[Markdown 表格]
+        ANS[自然语言分析]
+    end
+
+    U --> LLM
+    F --> LLM
+    SP --> LLM
+    LLM --> FC
+    FC --> SQL
+    SQL --> DB
+    DB --> MD
+    MD --> LLM
+    LLM --> ANS
+        </div>
+    </div>
+
+    <!-- 9. 依赖关系 -->
+    <div class="section">
+        <h2>9. 外部依赖</h2>
+        <table>
+            <tr><th>库 / 服务</th><th>用途</th></tr>
+            <tr><td>dashscope</td><td>通义千问 API 调用</td></tr>
+            <tr><td>qwen_agent</td><td>Assistant Agent + WebUI + BaseTool</td></tr>
+            <tr><td>pandas</td><td>SQL 结果读取与格式化</td></tr>
+            <tr><td>sqlalchemy</td><td>MySQL 数据库连接引擎</td></tr>
+            <tr><td>环境变量 DASHSCOPE_API_KEY</td><td>API 鉴权</td></tr>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { useMaxWidth: true, curve: 'basis' },
+        sequence: { actorMargin: 50, messageMargin: 35 }
+    });
+</script>
+</body>
+</html>
