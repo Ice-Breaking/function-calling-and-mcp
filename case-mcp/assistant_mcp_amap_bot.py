@@ -4,6 +4,7 @@
 1. 通过自然语言进行地图服务查询
 2. 支持多种交互方式（GUI、TUI、测试模式）
 3. 支持旅游规划、地点查询、路线导航等功能
+4. 按 A4 行程表模板生成可打印的行程页面，保存为 HTML 并在浏览器打开
 """
 
 import os
@@ -15,6 +16,9 @@ from qwen_agent.gui import WebUI
 
 # 定义资源文件根目录
 ROOT_RESOURCE = os.path.join(os.path.dirname(__file__), 'resource')
+
+# A4 行程表提示词模板，与助手同目录
+TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '旅行规划.md')
 
 # 配置 DashScope
 dashscope.api_key = os.getenv('DASHSCOPE_API_KEY', '')  # 从环境变量获取 API Key
@@ -33,17 +37,23 @@ def init_agent_service():
     """
     # LLM 模型配置
     llm_cfg = {
-        'model': 'qwen3.8-27b',
+        'model': 'qwen3.8-max',
         # 走百炼的 OpenAI 兼容通道，原生 DashScope 通道不支持该模型
         'model_server': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.getenv('DASHSCOPE_API_KEY'),
         'timeout': 60,  # 思考型模型响应更慢，放宽超时
         'retry_count': 3,  # 设置重试次数
     }
-    # 系统角色设定
+    # 系统角色设定：把 A4 行程表模板一起注入，让助手具备按模板出图的能力
+    with open(TEMPLATE_PATH, encoding='utf-8') as f:
+        travel_template = f.read()
     system = ('你扮演一个地图助手，你具有查询地图、规划路线、推荐景点等能力。'
-             '你可以帮助用户规划旅游行程，查找地点，导航等。'
-             '你应该充分利用高德地图的各种功能来提供专业的建议。')
+              '你可以帮助用户规划旅游行程，查找地点，导航等。'
+              '你应该充分利用高德地图的各种功能来提供专业的建议。'
+              '当用户要求生成行程图、行程表、行程海报或可打印的 A4 页面时：'
+              '先用地图工具查询真实路线与驾车里程，再严格按照下面的模板输出完整 HTML，'
+              '用一个 ```html 代码块包起来，不要省略任何内容区块。\n'
+              f'下面是 A4 行程表模板要求：\n{travel_template}')
     # MCP 工具配置
     tools = [{
         "mcpServers": {

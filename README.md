@@ -12,7 +12,7 @@ function-calling-and-mcp/
 │   ├── assistant_ticket_bot-3.py  v3 绘图重构 + 接入高德地图 / Tavily 两个 MCP
 │   └── assistant_ticket_bot_logic.html   v1 代码逻辑图解（浏览器直接打开）
 ├── case-mcp/                       MCP 助手集合
-│   ├── assistant_mcp_amap_bot.py  高德地图助手（旅行规划、地点查询、路线导航）
+│   ├── assistant_mcp_amap_bot.py  高德地图助手（已注入 A4 行程表模板，可生成行程图）
 │   ├── assistant_mcp_tavily_bot.py    联网搜索助手（搜索、新闻、网页提取）
 │   ├── assistant_mcp_txt_bot.py   本地文件助手（统计桌面 txt 文件）
 │   ├── txt_counter.py             自研 FastMCP Server（统计/列出/读取桌面 txt）
@@ -21,6 +21,10 @@ function-calling-and-mcp/
 │   ├── seed_sales_data.py         生成 sales.db 示例数据
 │   └── sales_assistant.py         业务助手本体
 └── exercise2-agent-mcp/            Agent + MCP 应用
+    ├── travel_planner_app.py      行程图生成界面（问什么行程就出什么 A4 图）
+    ├── generate_travel_planner.py 命令行版行程图生成脚本
+    ├── travel_planner.html        生成的 A4 行程表样例（北京三日游）
+    ├── travel_planner.png         行程表整页截图样例
     └── cursor-mcp.json            Cursor 客户端的 MCP 服务配置
 ```
 
@@ -62,7 +66,14 @@ export TAVILY_API_KEY=你的key
 export AMAP_MAPS_API_KEY=你的key
 ```
 
-3. 模型与额度：可运行的助手默认用 `qwen3.8-27b`，并走百炼的 OpenAI 兼容通道（`https://dashscope.aliyuncs.com/compatible-mode/v1`），因为原生 DashScope 通道不支持该模型。免费额度有限且有到期时间，用尽或过期后到百炼控制台查看仍有额度的模型（如 `qwen3.8-flash`、`kimi-k3`），把脚本 `llm_cfg` 里的 `model` 换掉即可。
+3. 模型与额度：可运行的助手默认用 `qwen3.8-max`，并走百炼的 OpenAI 兼容通道（`https://dashscope.aliyuncs.com/compatible-mode/v1`），原生 DashScope 通道不支持这些新模型。每个模型的免费额度**独立计算**且有到期时间，用尽或过期后换一个仍有额度的模型即可：到控制台「模型额度」页看剩余量，或用下面命令实测，然后把各脚本 `llm_cfg` 里的 `model` 统一替换：
+
+```bash
+curl -s https://dashscope.aliyuncs.com/compatible-mode/v1/models \
+  -H "Authorization: Bearer $DASHSCOPE_API_KEY" | head -c 2000    # 列出可用模型
+```
+
+实测发现 Qwen 系列在 Qwen-Agent 里配合 MCP 工具调用最稳定；部分第三方模型（如 kimi-k3）拿到工具结果后不再继续生成。
 
 密钥申请入口：
 
@@ -137,16 +148,35 @@ python exercise1-sales-assistant/sales_assistant.py    # 启动 Web 界面
 
 | 任务 | 使用的 MCP 服务 | 建议提问 |
 |---|---|---|
-| 规划 7 天自驾游 | amap-maps | 帮我规划一条从成都出发的 7 天自驾游路线，给出每天的城市、景点、驾车里程和住宿建议 |
+| 规划行程并生成 A4 行程图 | amap-maps | 北京三日游 / 成都出发的 5 天自驾游，并生成 A4 行程图 |
 | 网页内容转 Markdown | tavily-mcp | 获取 https://example.com 的网页内容，并转换成 Markdown 格式输出 |
 | 检索最新关税新闻 | tavily-mcp | 检索最近一周关于关税的最新新闻，列出标题、来源、时间和链接 |
 | 统计桌面 txt 文件数量 | txt-counter | 统计一下我桌面上有多少个 txt 文件，并把文件名列出来 |
 
-方式一：用 Qwen-Agent 代码（仓库内已具备，零额外代码）
+方式一：行程图生成界面（对话式出图）
+
+```bash
+python exercise2-agent-mcp/travel_planner_app.py     # 打开 http://127.0.0.1:7861
+```
+
+在界面里用自然语言描述任意行程，例如「北京三日游」「成都出发的 5 天自驾游」：
+助手先调用高德地图 MCP 查询真实路线与驾车里程，再按 `case-mcp/旅行规划.md` 的
+A4 模板把行程渲染成完整 HTML，自动保存为 `travel_planner.html` 并在浏览器打开，
+按 Cmd+P 即可打印成 PDF 或截图。
+
+实现说明：一次提问内部拆成两步——先由带地图工具的助手出行程要点，再由一个不带工具、
+关闭思考的助手渲染 HTML。不这样拆的话，一次性「边查地图边输出上千行 HTML」会被服务端
+断开长连接。命令行批量生成可用：
+
+```bash
+python exercise2-agent-mcp/generate_travel_planner.py --origin 成都 --days 7
+```
+
+方式二：用 Qwen-Agent 代码逐个体验（仓库内已具备）
 
 ```bash
 cd case-mcp
-python assistant_mcp_amap_bot.py      # 任务1
+python assistant_mcp_amap_bot.py      # 任务1：旅行规划（已注入 A4 模板）
 python assistant_mcp_tavily_bot.py    # 任务2、任务3
 python assistant_mcp_txt_bot.py       # 任务4
 ```
@@ -156,7 +186,7 @@ python assistant_mcp_txt_bot.py       # 任务4
 - 任务4 统计的是 `~/Desktop` 下的 `.txt` 文件，桌面没有 txt 时会返回 0 个，演示前可先在桌面放几个 txt 文件。
 - 三个 MCP 里只有 `txt-counter` 是本地服务，它由 `assistant_mcp_txt_bot.py` 用当前解释器（`sys.executable`）启动。系统自带 python 的 `mcp` 版本与 `txt_counter.py` 不兼容，直接用会导致 MCP 连接失败，因此请统一用仓库 `.venv` 里的 python 运行脚本。
 
-方式二：用 Cursor 客户端
+方式三：用 Cursor 客户端
 
 把 `exercise2-agent-mcp/cursor-mcp.json` 里的内容填入 `~/.cursor/mcp.json`（全局生效）或项目目录下的 `.cursor/mcp.json`，把两个 key 换成自己的，重启 Cursor 后在 Agent 模式直接用自然语言提问即可。配置里 npx 与 python 都写了绝对路径，避免客户端读不到命令行环境。
 
@@ -166,5 +196,6 @@ python assistant_mcp_txt_bot.py       # 任务4
 - 提示 `url error, please check url`：说明该模型不支持原生 DashScope 通道，按上面「模型与额度」的说明改用 OpenAI 兼容通道（`model_server`）。
 - 提示 `The dependencies for GUI support are not installed`：执行 `pip install "qwen-agent[gui]"`，若仍报缺少 `soundfile`，再执行 `pip install soundfile`。
 - txt-counter MCP 报 `Connection closed`：脚本被系统 python 拉起而它的 `mcp` 版本不兼容，请用仓库 `.venv` 里的 python 运行 `assistant_mcp_txt_bot.py`。
+- 助手调地图工具时只回一句开场白就停住：大概率是该模型的工具调用参数无法解析，换 Qwen 系列模型（如 `qwen3.8-max`、`qwen3.8-27b`）通常可以解决。
 - pip 卸载旧包被拦截：建议在仓库内新建虚拟环境安装（见环境准备），不要在全局环境反复升降级。
 - 想看门票助手的 SQL 执行过程：打开终端时把脚本里的 `app_gui()` 改成 `app_tui()`，可在命令行直接对话。

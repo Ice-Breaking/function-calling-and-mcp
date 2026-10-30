@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>北京三日游行程规划表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root {
+    --primary: #B71C1C;
+    --primary-light: #FFEBEE;
+    --primary-mid: #E53935;
+    --gold: #F57F17;
+    --gold-light: #FFF8E1;
+    --blue: #1565C0;
+    --blue-light: #E3F2FD;
+    --green: #2E7D32;
+    --green-light: #E8F5E9;
+    --purple: #6A1B9A;
+    --purple-light: #F3E5F5;
+    --gray-50: #FAFAFA;
+    --gray-100: #F5F5F5;
+    --gray-200: #EEEEEE;
+    --gray-300: #E0E0E0;
+    --gray-500: #9E9E9E;
+    --gray-700: #616161;
+    --gray-900: #212121;
+    --text: #1A1A1A;
+    --text-secondary: #555555;
+    --border: #D0D0D0;
+    --page-w: 210mm;
+    --page-h: 297mm;
+    --margin: 10mm;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #E0E0E0;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    font-size: 9pt;
+    line-height: 1.45;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(183,28,28,0.3);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .print-btn:hover { background: #D32F2F; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(183,28,28,0.4); }
+
+  .a4-page {
+    width: var(--page-w);
+    height: var(--page-h);
+    background: #FFFFFF;
+    padding: var(--margin);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== Decorative Background ===== */
+  .a4-page::before {
+    content: '';
+    position: absolute;
+    top: -30mm;
+    right: -30mm;
+    width: 80mm;
+    height: 80mm;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(183,28,28,0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4mm;
+    border-bottom: 2.5px solid var(--primary);
+    padding-bottom: 3mm;
+    margin-bottom: 3.5mm;
+    position: relative;
+  }
+  .header-left h1 {
+    font-size: 22pt;
+    font-weight: 900;
+    color: var(--primary);
+    letter-spacing: 2px;
+    line-height: 1.1;
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+  }
+  .header-left h1 .landmark-icon {
+    font-size: 18pt;
+    color: var(--gold);
+  }
+  .header-subtitle {
+    font-size: 9pt;
+    color: var(--text-secondary);
+    margin-top: 1.5mm;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+  }
+  .header-subtitle span { display: flex; align-items: center; gap: 1mm; }
+  .header-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .weather-badge {
+    background: var(--gold-light);
+    border: 1px solid #FFE082;
+    border-radius: 4px;
+    padding: 1.5mm 3mm;
+    font-size: 8pt;
+    color: #E65100;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+  }
+  .traveler-info {
+    font-size: 8pt;
+    color: var(--gray-700);
+    margin-top: 2mm;
+  }
+
+  /* ===== SECTION TITLES ===== */
+  .section-title {
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+    margin-bottom: 2mm;
+    padding-bottom: 1mm;
+    border-bottom: 1.5px solid var(--gray-300);
+  }
+  .section-title i { font-size: 9pt; width: 4mm; text-align: center; }
+
+  /* ===== OVERVIEW TIMELINE ===== */
+  .overview-section { margin-bottom: 3.5mm; }
+  .overview-timeline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2.5mm;
+  }
+  .overview-day {
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+    padding: 2mm 2.5mm;
+    position: relative;
+    background: var(--gray-50);
+  }
+  .overview-day::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 4px 4px 0 0;
+  }
+  .overview-day.day1::before { background: var(--primary); }
+  .overview-day.day2::before { background: var(--blue); }
+  .overview-day.day3::before { background: var(--green); }
+  .overview-day-header {
+    font-size: 8.5pt;
+    font-weight: 700;
+    margin-bottom: 1mm;
+    display: flex;
+    align-items: center;
+    gap: 1mm;
+  }
+  .day1 .overview-day-header { color: var(--primary); }
+  .day2 .overview-day-header { color: var(--blue); }
+  .day3 .overview-day-header { color: var(--green); }
+  .overview-route {
+    font-size: 7.5pt;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .overview-route .route-arrow { color: var(--gray-500); margin: 0 0.5mm; font-size: 6.5pt; }
+  .overview-spots {
+    margin-top: 1mm;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1mm;
+  }
+  .spot-tag {
+    font-size: 6.5pt;
+    padding: 0.3mm 1.5mm;
+    border-radius: 2px;
+    font-weight: 500;
+  }
+  .day1 .spot-tag { background: var(--primary-light); color: var(--primary); }
+  .day2 .spot-tag { background: var(--blue-light); color: var(--blue); }
+  .day3 .spot-tag { background: var(--green-light); color: var(--green); }
+
+  /* ===== DETAILED SCHEDULE ===== */
+  .schedule-section { margin-bottom: 3mm; flex: 1; }
+  .schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7.8pt;
+  }
+  .schedule-table thead th {
+    background: var(--gray-900);
+    color: #fff;
+    font-weight: 500;
+    padding: 1.5mm 2mm;
+    text-align: left;
+    font-size: 7.5pt;
+  }
+  .schedule-table thead th:first-child { border-radius: 3px 0 0 0; }
+  .schedule-table thead th:last-child { border-radius: 0 3px 0 0; }
+  .schedule-table tbody td {
+    padding: 1.5mm 2mm;
+    border-bottom: 0.5px solid var(--gray-300);
+    vertical-align: top;
+  }
+  .schedule-table tbody tr:hover { background: var(--gray-50); }
+  .day-row td {
+    font-weight: 700;
+    font-size: 8pt;
+    padding: 1.5mm 2mm;
+    border-bottom: 1px solid var(--gray-300);
+  }
+  .day-row.d1 td { background: var(--primary-light); color: var(--primary); }
+  .day-row.d2 td { background: var(--blue-light); color: var(--blue); }
+  .day-row.d3 td { background: var(--green-light); color: var(--green); }
+  .time-cell { font-weight: 700; white-space: nowrap; color: var(--gray-900); font-size: 7.5pt; min-width: 22mm; }
+  .activity-cell { font-weight: 500; }
+  .activity-cell .act-icon { margin-right: 1mm; font-size: 7pt; }
+  .icon-sight { color: var(--primary); }
+  .icon-food { color: var(--gold); }
+  .icon-transport { color: var(--blue); }
+  .icon-shop { color: var(--purple); }
+  .location-cell { color: var(--text-secondary); font-size: 7.2pt; }
+  .detail-cell { font-size: 7.2pt; color: var(--text-secondary); }
+  .price-tag {
+    display: inline-block;
+    background: #FFF3E0;
+    color: #E65100;
+    padding: 0.2mm 1.2mm;
+    border-radius: 2px;
+    font-size: 6.8pt;
+    font-weight: 700;
+    margin-left: 0.5mm;
+  }
+  .free-tag {
+    display: inline-block;
+    background: var(--green-light);
+    color: var(--green);
+    padding: 0.2mm 1.2mm;
+    border-radius: 2px;
+    font-size: 6.8pt;
+    font-weight: 700;
+  }
+  .book-tag {
+    display: inline-block;
+    background: var(--purple-light);
+    color: var(--purple);
+    padding: 0.2mm 1.2mm;
+    border-radius: 2px;
+    font-size: 6.5pt;
+    font-weight: 500;
+  }
+
+  /* ===== BOTTOM GRID ===== */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3mm;
+  }
+
+  /* Transport */
+  .transport-section .transport-list { list-style: none; }
+  .transport-section .transport-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5mm;
+    padding: 1.2mm 0;
+    border-bottom: 0.5px dashed var(--gray-300);
+    font-size: 7.5pt;
+  }
+  .transport-item:last-child { border-bottom: none; }
+  .transport-item .t-icon {
+    color: var(--blue);
+    font-size: 7pt;
+    margin-top: 0.3mm;
+    width: 3.5mm;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .transport-item .t-route { font-weight: 700; color: var(--text); }
+  .transport-item .t-detail { color: var(--text-secondary); font-size: 7pt; }
+  .transport-item .t-time {
+    margin-left: auto;
+    background: var(--blue-light);
+    color: var(--blue);
+    padding: 0.2mm 1.5mm;
+    border-radius: 2px;
+    font-size: 6.8pt;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Accommodation & Dining */
+  .hotel-dining-section .hd-block { margin-bottom: 2mm; }
+  .hd-block:last-child { margin-bottom: 0; }
+  .hd-subtitle {
+    font-size: 7.5pt;
+    font-weight: 700;
+    color: var(--gray-700);
+    margin-bottom: 1mm;
+    display: flex;
+    align-items: center;
+    gap: 1mm;
+  }
+  .hd-subtitle i { font-size: 7pt; color: var(--gold); }
+  .hd-list { list-style: none; font-size: 7.2pt; }
+  .hd-list li {
+    padding: 0.5mm 0;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: 1mm;
+    line-height: 1.4;
+  }
+  .hd-list li::before {
+    content: '•';
+    color: var(--gold);
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .hd-list .rec-name { font-weight: 700; color: var(--text); }
+
+  /* Info Grid (right col bottom) */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5mm;
+  }
+
+  /* Emergency */
+  .emergency-section .phone-list { list-style: none; }
+  .phone-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1mm 1.5mm;
+    font-size: 7.2pt;
+    border-bottom: 0.5px solid var(--gray-200);
+  }
+  .phone-list li:last-child { border-bottom: none; }
+  .phone-list .p-label { color: var(--text-secondary); display: flex; align-items: center; gap: 1mm; }
+  .phone-list .p-label i { color: var(--primary); font-size: 6.5pt; width: 3mm; text-align: center; }
+  .phone-list .p-number { font-weight: 900; color: var(--primary); font-size: 8pt; letter-spacing: 0.5px; }
+
+  /* Tips */
+  .tips-section .tip-list { list-style: none; }
+  .tip-list li {
+    font-size: 7pt;
+    padding: 0.6mm 0;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: 1mm;
+    line-height: 1.4;
+  }
+  .tip-list li i { color: var(--gold); font-size: 6pt; margin-top: 0.5mm; flex-shrink: 0; }
+
+  /* Budget */
+  .budget-section .budget-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1mm;
+  }
+  .budget-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    padding: 0.8mm 1.5mm;
+    background: var(--gray-50);
+    border-radius: 2px;
+    border: 0.5px solid var(--gray-200);
+  }
+  .budget-item .b-label { color: var(--text-secondary); }
+  .budget-item .b-value { font-weight: 700; color: var(--text); }
+  .budget-total {
+    grid-column: 1 / -1;
+    background: var(--primary-light);
+    border-color: var(--primary);
+  }
+  .budget-total .b-label { color: var(--primary); font-weight: 700; }
+  .budget-total .b-value { color: var(--primary); font-weight: 900; font-size: 8pt; }
+
+  /* Packing */
+  .packing-section .pack-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5mm 2mm;
+    list-style: none;
+  }
+  .pack-list li {
+    font-size: 7pt;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 1mm;
+    padding: 0.4mm 0;
+  }
+  .pack-list li .checkbox {
+    width: 3mm;
+    height: 3mm;
+    border: 1px solid var(--gray-500);
+    border-radius: 0.5mm;
+    flex-shrink: 0;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    margin-top: auto;
+    padding-top: 2mm;
+    border-top: 1px solid var(--gray-300);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 6.5pt;
+    color: var(--gray-500);
+  }
+  .footer-legend {
+    display: flex;
+    gap: 3mm;
+  }
+  .footer-legend span { display: flex; align-items: center; gap: 0.8mm; }
+
+  /* ===== PRINT STYLES ===== */
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    body {
+      background: #fff;
+      padding: 0;
+      margin: 0;
+    }
+    .print-btn { display: none !important; }
+    .a4-page {
+      box-shadow: none;
+      margin: 0;
+      padding: var(--margin);
+      width: var(--page-w);
+      height: var(--page-h);
+      page-break-after: avoid;
+    }
+  }
+
+  /* ===== SCREEN RESPONSIVE ===== */
+  @media screen and (max-width: 800px) {
+    .a4-page {
+      width: 100%;
+      height: auto;
+      min-height: 141.4vw;
+    }
+  }
+</style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">
+  <i class="fas fa-print"></i> 打印行程表
+</button>
+
+<div class="a4-page">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="header">
+    <div class="header-left">
+      <h1>
+        <i class="fas fa-landmark landmark-icon"></i>
+        北京三日游
+      </h1>
+      <div class="header-subtitle">
+        <span><i class="far fa-calendar-alt"></i> 2025年3月（建议春季出行）</span>
+        <span><i class="far fa-clock"></i> 3天2晚</span>
+        <span><i class="fas fa-route"></i> 总里程约 241 km</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="weather-badge">
+        <i class="fas fa-cloud-sun"></i>
+        春季参考：晴转多云，8°C~18°C，微风
+      </div>
+      <div class="traveler-info">
+        <i class="far fa-user"></i> 旅行者：_______________
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== OVERVIEW ==================== -->
+  <section class="overview-section">
+    <div class="section-title"><i class="fas fa-map-marked-alt"></i> 行程概览</div>
+    <div class="overview-timeline">
+      <div class="overview-day day1">
+        <div class="overview-day-header"><i class="fas fa-flag"></i> DAY 1 · 皇城古韵</div>
+        <div class="overview-route">
+          机场 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          故宫博物院 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          景山公园 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          南锣鼓巷
+        </div>
+        <div class="overview-spots">
+          <span class="spot-tag"><i class="fas fa-torii-gate"></i> 故宫</span>
+          <span class="spot-tag"><i class="fas fa-mountain"></i> 景山</span>
+          <span class="spot-tag"><i class="fas fa-store"></i> 南锣鼓巷</span>
+          <span class="spot-tag"><i class="fas fa-water"></i> 什刹海</span>
+        </div>
+      </div>
+      <div class="overview-day day2">
+        <div class="overview-day-header"><i class="fas fa-flag"></i> DAY 2 · 长城雄关</div>
+        <div class="overview-route">
+          酒店 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          八达岭长城 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          居庸关(途经) <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          奥林匹克公园
+        </div>
+        <div class="overview-spots">
+          <span class="spot-tag"><i class="fas fa-mountain"></i> 八达岭</span>
+          <span class="spot-tag"><i class="fas fa-chess-rook"></i> 居庸关</span>
+          <span class="spot-tag"><i class="fas fa-building"></i> 鸟巢</span>
+          <span class="spot-tag"><i class="fas fa-swimming-pool"></i> 水立方</span>
+        </div>
+      </div>
+      <div class="overview-day day3">
+        <div class="overview-day-header"><i class="fas fa-flag"></i> DAY 3 · 皇家园林</div>
+        <div class="overview-route">
+          酒店 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          颐和园 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          圆明园 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          清华/北大 <span class="route-arrow"><i class="fas fa-chevron-right"></i></span>
+          返程
+        </div>
+        <div class="overview-spots">
+          <span class="spot-tag"><i class="fas fa-tree"></i> 颐和园</span>
+          <span class="spot-tag"><i class="fas fa-monument"></i> 圆明园</span>
+          <span class="spot-tag"><i class="fas fa-university"></i> 高校</span>
+          <span class="spot-tag"><i class="fas fa-gift"></i> 伴手礼</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== DETAILED SCHEDULE ==================== -->
+  <section class="schedule-section">
+    <div class="section-title"><i class="fas fa-stream"></i> 详细时间表</div>
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th style="width:18%">时间</th>
+          <th style="width:20%">活动</th>
+          <th style="width:24%">地点</th>
+          <th style="width:38%">详情 / 备注</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- DAY 1 -->
+        <tr class="day-row d1"><td colspan="4"><i class="fas fa-calendar-day"></i> 第1天 — 皇城古韵与胡同文化（驾车约 31.2 km）</td></tr>
+        <tr>
+          <td class="time-cell">08:00 - 09:30</td>
+          <td class="activity-cell"><i class="fas fa-plane-arrival act-icon icon-transport"></i>抵达北京</td>
+          <td class="location-cell">首都国际机场 / 大兴国际机场</td>
+          <td class="detail-cell">前往酒店寄存行李，换乘地铁或打车至故宫 <span class="price-tag">机场快轨 25元</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">10:00 - 13:00</td>
+          <td class="activity-cell"><i class="fas fa-torii-gate act-icon icon-sight"></i>游览故宫博物院</td>
+          <td class="location-cell">东城区景山前街4号</td>
+          <td class="detail-cell">停留约3小时，中轴线+东西六宫 <span class="price-tag">门票 60元</span> <span class="book-tag">需提前预约</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">13:00 - 14:00</td>
+          <td class="activity-cell"><i class="fas fa-utensils act-icon icon-food"></i>午餐</td>
+          <td class="location-cell">四季民福烤鸭店（故宫店）</td>
+          <td class="detail-cell">推荐：酥香嫩烤鸭、巧拌豆苗。人气极高，<strong>需提前排队取号</strong></td>
+        </tr>
+        <tr>
+          <td class="time-cell">14:30 - 15:30</td>
+          <td class="activity-cell"><i class="fas fa-mountain act-icon icon-sight"></i>景山公园</td>
+          <td class="location-cell">西城区景山西街44号</td>
+          <td class="detail-cell">登万春亭俯瞰故宫全景，最佳拍照机位 <span class="price-tag">门票 2元</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">16:00 - 18:00</td>
+          <td class="activity-cell"><i class="fas fa-store act-icon icon-sight"></i>南锣鼓巷漫步</td>
+          <td class="location-cell">东城区南锣鼓巷</td>
+          <td class="detail-cell">感受老北京胡同文化，逛特色小店 <span class="free-tag">免费</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">18:00 - 20:30</td>
+          <td class="activity-cell"><i class="fas fa-utensils act-icon icon-food"></i>晚餐 + 什刹海</td>
+          <td class="location-cell">南锣鼓巷 / 什刹海</td>
+          <td class="detail-cell">推荐小吃：文宇奶酪、姚记炒肝；饭后什刹海散步赏夜景</td>
+        </tr>
+
+        <!-- DAY 2 -->
+        <tr class="day-row d2"><td colspan="4"><i class="fas fa-calendar-day"></i> 第2天 — 万里长城与奥运风采（全天约 160 km）</td></tr>
+        <tr>
+          <td class="time-cell">06:30 - 08:30</td>
+          <td class="activity-cell"><i class="fas fa-bus act-icon icon-transport"></i>前往长城</td>
+          <td class="location-cell">市区 → 八达岭长城</td>
+          <td class="detail-cell">单程约70km；可乘S2线火车或自驾/包车；途经<strong>居庸关长城</strong></td>
+        </tr>
+        <tr>
+          <td class="time-cell">08:30 - 12:30</td>
+          <td class="activity-cell"><i class="fas fa-mountain act-icon icon-sight"></i>攀登八达岭长城</td>
+          <td class="location-cell">延庆区八达岭镇</td>
+          <td class="detail-cell">体力消耗大，<strong>务必自带干粮和饮用水</strong> <span class="price-tag">门票 40元</span> <span class="book-tag">需预约</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">12:30 - 14:30</td>
+          <td class="activity-cell"><i class="fas fa-car act-icon icon-transport"></i>返回市区</td>
+          <td class="location-cell">八达岭 → 奥林匹克公园</td>
+          <td class="detail-cell">车程约1.5-2小时，可在车上休息恢复体力</td>
+        </tr>
+        <tr>
+          <td class="time-cell">15:00 - 17:30</td>
+          <td class="activity-cell"><i class="fas fa-building act-icon icon-sight"></i>奥林匹克公园</td>
+          <td class="location-cell">朝阳区北辰路</td>
+          <td class="detail-cell">外观鸟巢、水立方，傍晚亮灯后更佳 <span class="free-tag">外部免费</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">18:00 - 20:00</td>
+          <td class="activity-cell"><i class="fas fa-utensils act-icon icon-food"></i>晚餐·铜锅涮肉</td>
+          <td class="location-cell">奥体商圈（聚宝源/南门涮肉）</td>
+          <td class="detail-cell">爬完长城补充热量首选！推荐手切鲜羊肉、芝麻烧饼</td>
+        </tr>
+
+        <!-- DAY 3 -->
+        <tr class="day-row d3"><td colspan="4"><i class="fas fa-calendar-day"></i> 第3天 — 皇家园林与文化之旅（全天约 50 km）</td></tr>
+        <tr>
+          <td class="time-cell">08:00 - 08:40</td>
+          <td class="activity-cell"><i class="fas fa-car act-icon icon-transport"></i>前往颐和园</td>
+          <td class="location-cell">市区酒店 → 颐和园</td>
+          <td class="detail-cell">单程约20公里，建议早出发避开人流</td>
+        </tr>
+        <tr>
+          <td class="time-cell">09:00 - 11:30</td>
+          <td class="activity-cell"><i class="fas fa-tree act-icon icon-sight"></i>游览颐和园</td>
+          <td class="location-cell">海淀区新建宫门路19号</td>
+          <td class="detail-cell">重点：长廊、昆明湖、佛香阁 <span class="price-tag">联票 60元</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">11:30 - 13:00</td>
+          <td class="activity-cell"><i class="fas fa-utensils act-icon icon-food"></i>午餐·宫廷菜</td>
+          <td class="location-cell">白家大院（颐和园附近）</td>
+          <td class="detail-cell">体验清代宫廷菜氛围，花园式餐厅，适合行程收尾</td>
+        </tr>
+        <tr>
+          <td class="time-cell">13:30 - 15:00</td>
+          <td class="activity-cell"><i class="fas fa-monument act-icon icon-sight"></i>圆明园遗址公园</td>
+          <td class="location-cell">海淀区清华西路28号</td>
+          <td class="detail-cell">距颐和园仅3km；参观大水法遗址 <span class="price-tag">门票 10元</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">15:00 - 16:00</td>
+          <td class="activity-cell"><i class="fas fa-university act-icon icon-sight"></i>清华/北大外观</td>
+          <td class="location-cell">海淀区</td>
+          <td class="detail-cell">校门合影打卡，感受顶尖学府氛围 <span class="free-tag">免费</span></td>
+        </tr>
+        <tr>
+          <td class="time-cell">16:00 - 17:00</td>
+          <td class="activity-cell"><i class="fas fa-gift act-icon icon-shop"></i>购买伴手礼</td>
+          <td class="location-cell">稻香村门店 / 全聚德</td>
+          <td class="detail-cell">推荐：稻香村京八件糕点、全聚德真空包装烤鸭</td>
+        </tr>
+        <tr>
+          <td class="time-cell">17:30 - 19:00</td>
+          <td class="activity-cell"><i class="fas fa-plane-departure act-icon icon-transport"></i>前往交通枢纽</td>
+          <td class="location-cell">→ 首都机场 / 大兴机场 / 高铁站</td>
+          <td class="detail-cell">请根据航班/车次预留充足时间，结束愉快旅程！</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ==================== BOTTOM GRID ==================== -->
+  <div class="bottom-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+      <!-- Transport -->
+      <section class="transport-section" style="margin-bottom: 3mm;">
+        <div class="section-title"><i class="fas fa-subway"></i> 交通信息</div>
+        <ul class="transport-list">
+          <li class="transport-item">
+            <i class="fas fa-car t-icon"></i>
+            <div>
+              <div class="t-route">机场 → 故宫（Day1 核心路段）</div>
+              <div class="t-detail">首都机场出发约31.2km，可乘机场快轨转地铁</div>
+            </div>
+            <span class="t-time">~60min</span>
+          </li>
+          <li class="transport-item">
+            <i class="fas fa-bus t-icon"></i>
+            <div>
+              <div class="t-route">市区 → 八达岭长城（Day2 往返）</div>
+              <div class="t-detail">单程约70km，推荐S2线市郊铁路或包车，往返+转场约160km</div>
+            </div>
+            <span class="t-time">~90min/趟</span>
+          </li>
+          <li class="transport-item">
+            <i class="fas fa-car t-icon"></i>
+            <div>
+              <div class="t-route">市区 → 颐和园 → 圆明园（Day3）</div>
+              <div class="t-detail">市区至颐和园约20km，两园相距仅3km，全天约50km</div>
+            </div>
+            <span class="t-time">~40min</span>
+          </li>
+          <li class="transport-item">
+            <i class="fas fa-subway t-icon"></i>
+            <div>
+              <div class="t-route">市内通勤建议</div>
+              <div class="t-detail">下载「亿通行」APP扫码乘车，地铁覆盖所有核心景点</div>
+            </div>
+            <span class="t-time">必备</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Hotel & Dining -->
+      <section class="hotel-dining-section">
+        <div class="section-title"><i class="fas fa-bed"></i> 住宿与餐饮推荐</div>
+        <div class="hd-block">
+          <div class="hd-subtitle"><i class="fas fa-hotel"></i> 住宿安排</div>
+          <ul class="hd-list">
+            <li><span class="rec-name">Day 1-2：</span>推荐入住南锣鼓巷或王府井周边精品酒店，出行便利且能深度感受老北京胡同文化</li>
+            <li><span class="rec-name">Day 2备选：</span>也可换住亚运村/奥体中心附近酒店，方便夜间游览奥林匹克公园</li>
+            <li><span class="rec-name">Day 3：</span>最后一天无需住宿，游览结束后直接前往机场或高铁站返程</li>
+          </ul>
+        </div>
+        <div class="hd-block">
+          <div class="hd-subtitle"><i class="fas fa-utensils"></i> 精选美食</div>
+          <ul class="hd-list">
+            <li><span class="rec-name">四季民福烤鸭店</span> — 故宫旁，酥香嫩烤鸭必点（需早到排队）</li>
+            <li><span class="rec-name">文宇奶酪 / 姚记炒肝</span> — 南锣鼓巷老北京特色小吃</li>
+            <li><span class="rec-name">聚宝源 / 南门涮肉</span> — 奥体商圈铜锅涮肉，爬长城后补充热量首选</li>
+            <li><span class="rec-name">白家大院</span> — 颐和园附近宫廷菜，花园式环境体验极佳</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col">
+      <div class="info-grid">
+        <!-- Emergency -->
+        <section class="emergency-section">
+          <div class="section-title"><i class="fas fa-phone-alt"></i> 紧急电话</div>
+          <ul class="phone-list">
+            <li>
+              <span class="p-label"><i class="fas fa-shield-alt"></i> 报警</span>
+              <span class="p-number">110</span>
+            </li>
+            <li>
+              <span class="p-label"><i class="fas fa-ambulance"></i> 急救</span>
+              <span class="p-number">120</span>
+            </li>
+            <li>
+              <span class="p-label"><i class="fas fa-fire-extinguisher"></i> 火警</span>
+              <span class="p-number">119</span>
+            </li>
+            <li>
+              <span class="p-label"><i class="fas fa-headset"></i> 旅游热线</span>
+              <span class="p-number">12345</span>
+            </li>
+            <li>
+              <span class="p-label"><i class="fas fa-bus"></i> 交通服务</span>
+              <span class="p-number">12328</span>
+            </li>
+          </ul>
+        </section>
+
+        <!-- Tips -->
+        <section class="tips-section">
+          <div class="section-title"><i class="fas fa-lightbulb"></i> 实用提示</div>
+          <ul class="tip-list">
+            <li><i class="fas fa-check-circle"></i> 故宫、长城等景点均需<strong>提前在线实名预约</strong>，现场不售票</li>
+            <li><i class="fas fa-check-circle"></i> 春季北京早晚温差大（8-18°C），建议洋葱式穿搭</li>
+            <li><i class="fas fa-check-circle"></i> 爬长城穿舒适运动鞋，自带充足饮水和高热量零食</li>
+            <li><i class="fas fa-check-circle"></i> 下载「亿通行」APP乘地铁，提前充值交通卡</li>
+            <li><i class="fas fa-check-circle"></i> 热门餐厅（如四季民福）建议开餐前1小时到场排号</li>
+            <li><i class="fas fa-check-circle"></i> 景区周边注意防范黑车和黄牛，使用正规平台叫车</li>
+          </ul>
+        </section>
+
+        <!-- Budget -->
+        <section class="budget-section">
+          <div class="section-title"><i class="fas fa-wallet"></i> 预算摘要（参考/人）</div>
+          <div class="budget-grid">
+            <div class="budget-item">
+              <span class="b-label"><i class="fas fa-ticket-alt"></i> 门票</span>
+              <span class="b-value">≈ 172元</span>
+            </div>
+            <div class="budget-item">
+              <span class="b-label"><i class="fas fa-car"></i> 交通</span>
+              <span class="b-value">≈ 300元</span>
+            </div>
+            <div class="budget-item">
+              <span class="b-label"><i class="fas fa-utensils"></i> 餐饮</span>
+              <span class="b-value">≈ 500元</span>
+            </div>
+            <div class="budget-item">
+              <span class="b-label"><i class="fas fa-bed"></i> 住宿</span>
+              <span class="b-value">≈ 800元</span>
+            </div>
+            <div class="budget-item budget-total">
+              <span class="b-label">预估总计</span>
+              <span class="b-value">≈ 1,772元</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Packing -->
+        <section class="packing-section">
+          <div class="section-title"><i class="fas fa-suitcase-rolling"></i> 行李清单</div>
+          <ul class="pack-list">
+            <li><span class="checkbox"></span> 身份证（必带）</li>
+            <li><span class="checkbox"></span> 手机 + 充电宝</li>
+            <li><span class="checkbox"></span> 舒适运动鞋</li>
+            <li><span class="checkbox"></span> 防风外套</li>
+            <li><span class="checkbox"></span> 雨伞 / 雨衣</li>
+            <li><span class="checkbox"></span> 防晒霜 + 墨镜</li>
+            <li><span class="checkbox"></span> 常用药品</li>
+            <li><span class="checkbox"></span> 少量现金</li>
+            <li><span class="checkbox"></span> 水壶 + 零食</li>
+            <li><span class="checkbox"></span> 预约确认截图</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="footer">
+    <div class="footer-legend">
+      <span><i class="fas fa-torii-gate icon-sight"></i> 景点</span>
+      <span><i class="fas fa-utensils icon-food"></i> 餐饮</span>
+      <span><i class="fas fa-bus icon-transport"></i> 交通</span>
+      <span><i class="fas fa-gift icon-shop"></i> 购物</span>
+      <span class="price-tag" style="font-size:6.5pt;">票价</span>
+      <span class="free-tag" style="font-size:6.5pt;">免费</span>
+      <span class="book-tag" style="font-size:6.5pt;">需预约</span>
+    </div>
+    <div>本行程仅供参考，请以实际为准 · 祝旅途愉快！ <i class="fas fa-heart" style="color:var(--primary);font-size:6pt;"></i></div>
+  </footer>
+
+</div>
+
+<script>
+  // Add keyboard shortcut for printing
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+      e.preventDefault();
+      window.print();
+    }
+  });
+</script>
+
+</body>
+</html>
