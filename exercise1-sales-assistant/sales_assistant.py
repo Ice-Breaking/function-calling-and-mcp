@@ -78,8 +78,11 @@ class ExcSQLTool(BaseTool):
 def init_agent_service():
     """初始化销售助手服务"""
     llm_cfg = {
-        'model': 'qwen-plus',
-        'timeout': 30,
+        'model': 'qwen3.8-27b',
+        # 走百炼的 OpenAI 兼容通道，原生 DashScope 通道不支持该模型
+        'model_server': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+        'timeout': 60,  # 思考型模型响应更慢，放宽超时
         'retry_count': 3,
     }
     try:

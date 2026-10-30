@@ -34,13 +34,27 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. 配置密钥与环境变量。复制 `.env.example` 为 `.env` 后填写（`.env` 已被 git 忽略）：
+2. 配置密钥与环境变量。复制 `.env.example` 为 `.env` 后填入自己的 key：
 
 ```bash
 cp .env.example .env
 ```
 
-或者直接在终端导出（以 macOS / Linux 为例）：
+`.env` 已被 git 忽略，**key 只能写进 `.env`，不要写进会被提交的 `.env.example`**。
+
+脚本只读取进程环境变量，不会自动加载 `.env`，填完必须导入当前终端（macOS / Linux）：
+
+```bash
+set -a; source .env; set +a
+```
+
+Windows PowerShell：
+
+```powershell
+Get-Content .env | ForEach-Object { if ($_ -and $_ -notmatch '^#') { $p = $_ -split '=', 2; [Environment]::SetEnvironmentVariable($p[0], $p[1], 'Process') } }
+```
+
+也可以不用 `.env`，直接逐个导出（macOS / Linux）：
 
 ```bash
 export DASHSCOPE_API_KEY=你的key
@@ -48,14 +62,23 @@ export TAVILY_API_KEY=你的key
 export AMAP_MAPS_API_KEY=你的key
 ```
 
+3. 模型与额度：可运行的助手默认用 `qwen3.8-27b`，并走百炼的 OpenAI 兼容通道（`https://dashscope.aliyuncs.com/compatible-mode/v1`），因为原生 DashScope 通道不支持该模型。免费额度有限且有到期时间，用尽或过期后到百炼控制台查看仍有额度的模型（如 `qwen3.8-flash`、`kimi-k3`），把脚本 `llm_cfg` 里的 `model` 换掉即可。
+
 密钥申请入口：
 
 | 环境变量 | 用途 | 申请入口 |
 |---|---|---|
-| DASHSCOPE_API_KEY | 通义千问模型（必填，所有脚本都要用） | 阿里云百炼控制台 |
+| DASHSCOPE_API_KEY | 通义千问 / 百炼上的模型（必填，所有脚本都要用） | 阿里云百炼控制台 API-KEY 管理 |
 | TAVILY_API_KEY | Tavily 搜索 MCP（有免费额度） | https://app.tavily.com 注册后在控制台获取 |
 | AMAP_MAPS_API_KEY | 高德地图 MCP（免费，服务平台选「Web服务」） | https://console.amap.com 创建应用后添加 Key |
 | MYSQL_* | 门票助手使用的数据库 | 换成自己的 MySQL 即可，销售业务助手不需要 |
+
+高德 Key 申请步骤（免费，需登录本人的高德账号，无法由他人代办）：
+
+1. 打开 https://console.amap.com 并登录
+2. 进入「应用管理 → 我的应用」，点「创建新应用」，填应用名称与类型
+3. 在新建的应用下点「添加 Key」，**服务平台必须选「Web服务」**，选错会导致地图 MCP 调用被拒绝
+4. 提交后复制生成的 Key，填入 `.env` 的 `AMAP_MAPS_API_KEY`
 
 ## Function Calling 门票助手
 
@@ -128,13 +151,20 @@ python assistant_mcp_tavily_bot.py    # 任务2、任务3
 python assistant_mcp_txt_bot.py       # 任务4
 ```
 
+说明：
+
+- 任务4 统计的是 `~/Desktop` 下的 `.txt` 文件，桌面没有 txt 时会返回 0 个，演示前可先在桌面放几个 txt 文件。
+- 三个 MCP 里只有 `txt-counter` 是本地服务，它由 `assistant_mcp_txt_bot.py` 用当前解释器（`sys.executable`）启动。系统自带 python 的 `mcp` 版本与 `txt_counter.py` 不兼容，直接用会导致 MCP 连接失败，因此请统一用仓库 `.venv` 里的 python 运行脚本。
+
 方式二：用 Cursor 客户端
 
 把 `exercise2-agent-mcp/cursor-mcp.json` 里的内容填入 `~/.cursor/mcp.json`（全局生效）或项目目录下的 `.cursor/mcp.json`，把两个 key 换成自己的，重启 Cursor 后在 Agent 模式直接用自然语言提问即可。配置里 npx 与 python 都写了绝对路径，避免客户端读不到命令行环境。
 
 ## 常见问题
 
-- 提示 `Free quota exhausted`：百炼账号免费额度已用完，去控制台充值，或关闭「仅使用免费额度」开关。
+- 提示 `Free quota exhausted`：当前模型的免费额度已用完或已过期。到百炼控制台「模型额度」页挑一个仍有额度的模型（如 `qwen3.8-flash`、`kimi-k3`），把脚本 `llm_cfg` 里的 `model` 换成它；也可以充值或关闭「仅使用免费额度」开关。
+- 提示 `url error, please check url`：说明该模型不支持原生 DashScope 通道，按上面「模型与额度」的说明改用 OpenAI 兼容通道（`model_server`）。
 - 提示 `The dependencies for GUI support are not installed`：执行 `pip install "qwen-agent[gui]"`，若仍报缺少 `soundfile`，再执行 `pip install soundfile`。
+- txt-counter MCP 报 `Connection closed`：脚本被系统 python 拉起而它的 `mcp` 版本不兼容，请用仓库 `.venv` 里的 python 运行 `assistant_mcp_txt_bot.py`。
 - pip 卸载旧包被拦截：建议在仓库内新建虚拟环境安装（见环境准备），不要在全局环境反复升降级。
 - 想看门票助手的 SQL 执行过程：打开终端时把脚本里的 `app_gui()` 改成 `app_tui()`，可在命令行直接对话。

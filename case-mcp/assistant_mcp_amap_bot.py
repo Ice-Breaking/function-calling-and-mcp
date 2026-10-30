@@ -33,8 +33,11 @@ def init_agent_service():
     """
     # LLM 模型配置
     llm_cfg = {
-        'model': 'qwen-max',
-        'timeout': 30,  # 设置模型调用超时时间
+        'model': 'qwen3.8-27b',
+        # 走百炼的 OpenAI 兼容通道，原生 DashScope 通道不支持该模型
+        'model_server': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+        'timeout': 60,  # 思考型模型响应更慢，放宽超时
         'retry_count': 3,  # 设置重试次数
     }
     # 系统角色设定
